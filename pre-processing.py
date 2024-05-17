@@ -1,7 +1,9 @@
 import json
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
 from sklearn.metrics import classification_report, confusion_matrix
 import os
 
@@ -95,7 +97,7 @@ def load_data(data_dir):
         for json_file in os.listdir(dir_path):
             file_path = os.path.join(dir_path, json_file)
             keypoints = load_keypoints_from_json(file_path)
-            filtered_keypoints = filter_keypoints_by_confidence(keypoints)
+            #filtered_keypoints = filter_keypoints_by_confidence(keypoints)
 
             if len(keypoints) > 0:
                 feature = extract_features(keypoints)
@@ -108,14 +110,48 @@ def load_data(data_dir):
 features, labels = load_data('./JSON/')
 
 
+def create_model():
+    model = Sequential()
+    model.add(Dense(64, input_dim=6, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(4, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy',
+                  optimizer='adam',
+                  metrics=['accuracy'])
+
+    return model
+
+features, labels = load_data('./JSON/')
+
+# One-hot encode the labels
+label_dict = {'NORMAL': 0, 'MILD': 1, 'MODERATE': 2, 'SEVERE': 3}
+labels = [label_dict[l] for l in labels]
+labels = tf.keras.utils.to_categorical(labels)
+
+# Split data into training sets and testing sets
 X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
 
+# Create model
+model = create_model()
 
-rf = RandomForestClassifier(n_estimators=100, random_state=42)
-rf.fit(X_train, y_train)
+# Train the model
+model.fit(X_train, y_train,
+          batch_size=32,
+          epochs=10,
+          verbose=1,
+          validation_data=(X_test, y_test))
 
+# Evaluate the model
+scores = model.evaluate(X_test, y_test, verbose=0)
+print("CNN Error: %.2f%%" % (100-scores[1]*100))
 
-y_pred = rf.predict(X_test)
+# Predict the testing set
+y_pred = np.argmax(model.predict(X_test), axis=-1)
+y_test = np.argmax(y_test, axis=-1)
 
+# Print classification report and confusion matrix
 print(classification_report(y_test, y_pred))
 print(confusion_matrix(y_test, y_pred))
