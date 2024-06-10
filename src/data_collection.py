@@ -1,12 +1,7 @@
 import pandas as pd
 import json
 import os
-
-def flatten_list(matrix):
-    flat_list = []
-    for row in matrix:
-        flat_list.extend(row)
-    return flat_list
+import numpy as np
 
 
 def json_to_list(filepath):
@@ -19,27 +14,20 @@ def json_to_list(filepath):
   for item in data:
     keypoints = item["keypoints"]
     filtered_keypoints = [point for i, point in enumerate(keypoints) if i % 3 != 2]  # Skip confidence score (Every 3rd value in list)
-    keypoints_list.append(filtered_keypoints)
+    keypoints_list.append(np.array(filtered_keypoints))
   
   return keypoints_list
 
 
-def process_json_files(filepaths, limit=122128):
-  
-
-  all_keypoints = []
+def process_json_files(filepaths):
+  df = pd.DataFrame(columns=['keypoints'])
   for filepath in filepaths:
     #Turn dataframe of video's keypoints into a flattened list
-    json_keypoints_list = json_to_list(filepath)
-    flattened_list = flatten_list(json_keypoints_list)
-
-    # Add zero's to right end of list of shorter videos
-    flattened_list = flattened_list[:limit] + [0] * (limit - len(flattened_list))
-
-    all_keypoints.append(flattened_list)
-
-  # Create a DataFrame from keypoints
-  df = pd.DataFrame(all_keypoints)
+    keypoints_list = json_to_list(filepath)
+    keypoints = np.array(keypoints_list)
+    # Data for a new row
+    video_data = {'keypoints': keypoints}
+    df = df._append(video_data, ignore_index=True)
 
   return df
 
@@ -59,10 +47,11 @@ def load_features(data_dir):
     #Adds the labels column to the final dataframe
     label_df = pd.DataFrame(labels, columns=['label'])
     df = pd.concat([df, label_df], axis=1)
-
-    #Creates csv file from df
-    df.to_csv("./resources/labeled_keypoints.csv", index=False)
-    return 
+    
+    return df
 
 
-load_features('./resources/JSON/')
+def create_csv():
+   df = load_features('./resources/JSON/')
+   df.to_csv("./resources/labeled_keypoints.csv", index=False)
+   return
