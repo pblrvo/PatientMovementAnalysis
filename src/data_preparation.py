@@ -9,8 +9,8 @@ videos_df = load_features('./resources/JSON/')
 def split_data_with_label_representation(df):
     labels = df["label"].to_numpy()
 
-  # StratifiedShuffleSplit for label-aware splitting
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+  # For label-aware splitting
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.15, random_state=42)
 
   # Splitting based on label groups
     for train_index, test_index in sss.split(df, labels):
