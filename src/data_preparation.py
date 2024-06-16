@@ -2,7 +2,6 @@ from sklearn.model_selection import StratifiedShuffleSplit
 import tensorflow as tf
 from data_collection import load_features
 from hyperparameter_tuning import MAX_SEQ_LENGTH
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
 
 videos_df = load_features('./resources/JSON/')
