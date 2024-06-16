@@ -2,7 +2,7 @@ from keras import layers
 import keras_tuner as kt
 import keras
 
-MAX_SEQ_LENGTH = 600
+MAX_SEQ_LENGTH = 3982
 EPOCHS = 100
 DENSE_DIM = 272
 NUM_CLASSES = 4
@@ -31,10 +31,11 @@ class MyHyperModel(kt.HyperModel):
         ff_dim = hp.Int('ff_dim', min_value=32, max_value=128, step=32)
         
         inputs = keras.Input(shape=(MAX_SEQ_LENGTH, DENSE_DIM))
-        #x = layers.Masking(mask_value=0)(inputs)
+        
+        x = inputs
         
         for _ in range(num_layers):
-            x = transformer_encoder(inputs, head_size=DENSE_DIM, num_heads=num_heads, ff_dim=ff_dim, dropout=dropout_rate)
+            x = transformer_encoder(x, head_size=DENSE_DIM, num_heads=num_heads, ff_dim=ff_dim, dropout=dropout_rate)
 
         # LSTM layers
         x = layers.Bidirectional(layers.LSTM(128, return_sequences=True))(x)
