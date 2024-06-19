@@ -3,7 +3,7 @@ import keras_tuner as kt
 import keras
 
 MAX_SEQ_LENGTH = 3982
-EPOCHS = 100
+EPOCHS = 200
 DENSE_DIM = 272
 NUM_CLASSES = 4
 

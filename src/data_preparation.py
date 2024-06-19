@@ -3,6 +3,7 @@ import tensorflow as tf
 from data_collection import load_features
 from hyperparameter_tuning import MAX_SEQ_LENGTH
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 videos_df = load_features('./resources/JSON/')
 
@@ -48,16 +49,43 @@ def extend_keypoints(df):
     df['keypoints'] = df['keypoints'].apply(lambda x: extend_list(np.array(x)))
     return df
 
+def standardize_keypoints(df):
+  scaler = StandardScaler()
+  all_standardized_keypoints = []
+  df = df.reset_index(drop=True)
+  for i in range(len(df)):
+    keypoints = df.loc[i, 'keypoints']
+
+    standardized_video_keypoints = []
+    for frame_keypoints in keypoints:
+      # Reshape to 2D for StandardScaler
+      frame_keypoints = frame_keypoints.reshape(-1, 1)  # Reshape to (n_samples, n_features)
+      # Standardize using StandardScaler
+      standardized_frame_keypoints = scaler.fit_transform(frame_keypoints)
+      # Reshape back to original frame format
+      standardized_frame_keypoints = standardized_frame_keypoints.reshape(-1)
+      standardized_video_keypoints.append(standardized_frame_keypoints)
+
+    all_standardized_keypoints.append(standardized_video_keypoints)
+
+  return all_standardized_keypoints  # Return the list of standardized video keypoints
+
+
+
+
 
 def build_tensors(df):
     
   train_X, test_X, train_y, test_y = split_data_with_label_representation(df)
 
-  train_data_padded = extend_keypoints(train_X)
-  test_data_padded = extend_keypoints(test_X)
+  train_data_extended = extend_keypoints(train_X)
+  test_data_extended = extend_keypoints(test_X)
+
+  train_data_extended = standardize_keypoints(train_data_extended)
+  test_data_extended = standardize_keypoints(test_data_extended)
 
   train_X_tensor = []
-  for video in train_data_padded['keypoints']:
+  for video in train_data_extended:
     # Iterate through frames in the video
     frame_tensors = []
     for frame in video:
@@ -68,7 +96,7 @@ def build_tensors(df):
     train_X_tensor.append(frame_tensors)
 
   test_X_tensor = []
-  for video in test_data_padded['keypoints']:
+  for video in test_data_extended:
     frame_tensors = []
     for frame in video:
       frame_tensor = tf.convert_to_tensor(frame, dtype=tf.float32)
