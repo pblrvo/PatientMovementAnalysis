@@ -10,7 +10,7 @@ def json_to_list(filepath):
     data = json.load(f)
 
   keypoints_list = []
-  #Creates a keypoints list from all the frames in a video
+  #Creates a list of frames in a video
   for item in data:
     keypoints = item["keypoints"]
     filtered_keypoints = [point for i, point in enumerate(keypoints) if i % 3 != 2]  # Skip confidence score (Every 3rd value in list)
@@ -22,7 +22,6 @@ def json_to_list(filepath):
 def process_json_files(filepaths):
   df = pd.DataFrame(columns=['keypoints'])
   for filepath in filepaths:
-    #Turn dataframe of video's keypoints into a flattened list
     keypoints_list = json_to_list(filepath)
     keypoints = np.array(keypoints_list)
     # Data for a new row
@@ -52,6 +51,19 @@ def load_features(data_dir):
 
 
 def create_csv():
-   df = load_features('./resources/JSON/')
-   df.to_csv("./resources/labeled_keypoints.csv", index=False)
-   return
+    df = load_features('./resources/JSON/')
+    
+    # Convert arrays in keypoints column to JSON strings
+    df['keypoints'] = df['keypoints'].apply(lambda x: json.dumps(x.tolist()))
+
+    df.to_csv("./resources/labeled_keypoints.csv", index=False)
+    return df
+
+def load_csv(filepath):
+    df = pd.read_csv(filepath)
+
+    # Convert JSON strings back to lists of arrays
+    df['keypoints'] = df['keypoints'].apply(lambda x: np.array(json.loads(x)))
+
+    return df
+

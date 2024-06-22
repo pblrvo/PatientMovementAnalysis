@@ -1,13 +1,9 @@
 from sklearn.model_selection import StratifiedShuffleSplit
 import tensorflow as tf
-from data_collection import load_features
+from data_collection import load_csv
 from hyperparameter_tuning import MAX_SEQ_LENGTH
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-
-# Load features
-videos_df = load_features('./resources/JSON/')
-
 
 # Split data into keypoints and labels
 def split_data_and_labels(df):
