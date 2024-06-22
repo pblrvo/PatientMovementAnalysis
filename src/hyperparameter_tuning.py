@@ -29,6 +29,7 @@ class MyHyperModel(kt.HyperModel):
         num_layers = hp.Int('num_layers', min_value=2, max_value=4, step=1)
         dropout_rate = hp.Float('dropout_rate', min_value=0.2, max_value=0.5, step=0.1)
         ff_dim = hp.Int('ff_dim', min_value=32, max_value=128, step=32)
+        learning_rate = hp.Float('learning_rate', min_value=1e-5, max_value=1e-2, sampling='LOG')
         
         inputs = keras.Input(shape=(MAX_SEQ_LENGTH, DENSE_DIM))
         
@@ -52,7 +53,13 @@ class MyHyperModel(kt.HyperModel):
         model = keras.Model(inputs, outputs)
         
         # Hyperparameter tuning for optimizers
-        optimizer = hp.Choice('optimizer', values=['adam', 'sgd', 'rmsprop'])
+        optimizer_choice = hp.Choice('optimizer', values=['adam', 'sgd', 'rmsprop'])
+        if optimizer_choice == 'adam':
+            optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+        elif optimizer_choice == 'sgd':
+            optimizer = keras.optimizers.SGD(learning_rate=learning_rate)
+        elif optimizer_choice == 'rmsprop':
+            optimizer = keras.optimizers.RMSprop(learning_rate=learning_rate)
 
         model.compile(
             optimizer=optimizer,

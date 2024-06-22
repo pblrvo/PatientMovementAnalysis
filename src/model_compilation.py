@@ -74,7 +74,7 @@ def run_experiment():
     tuner = kt.RandomSearch(
         MyHyperModel(),
         objective='val_accuracy',
-        max_trials=3,  # Reduce trials for testing
+        max_trials=10,
         executions_per_trial=1,
         directory='my_dir',
         project_name='hyperparam_tuning_final',
