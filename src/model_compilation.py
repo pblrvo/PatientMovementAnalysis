@@ -15,7 +15,7 @@ X, y = build_tensors(videos_df)
 le = LabelEncoder()
 y_encoded = le.fit_transform(y)
 
-def run_experiment():
+def tune_hyperparameters():
     print("Hyperparameter tuning starting")
     filepath = "/tmp/video_classifier_model.keras"
     checkpoint = keras.callbacks.ModelCheckpoint(
@@ -95,5 +95,8 @@ def cross_validate_model(best_model, X, y_encoded):
 
     return best_model
 
+def run_experiment():
+    best_model = tune_hyperparameters(X, y_encoded)
+    cross_validate_model(best_model, X, y_encoded)
+    
 model = run_experiment()
-final_model = cross_validate_model(model, X, y_encoded)

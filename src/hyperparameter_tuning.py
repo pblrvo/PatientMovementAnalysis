@@ -26,9 +26,11 @@ def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
 class MyHyperModel(kt.HyperModel):
     def build(self, hp):
         num_heads = hp.Int('num_heads', min_value=2, max_value=8, step=2)
-        num_layers = hp.Int('num_layers', min_value=2, max_value=4, step=1)
+        num_layers = hp.Int('num_layers', min_value=1, max_value=6, step=1)
         dropout_rate = hp.Float('dropout_rate', min_value=0.2, max_value=0.5, step=0.1)
-        ff_dim = hp.Int('ff_dim', min_value=32, max_value=128, step=32)
+        ff_dim = hp.Int('ff_dim', min_value=32, max_value=256, step=32)
+        lstm_units = hp.Int('lstm_units', min_value=64, max_value=256, step=64)
+        dense_units = hp.Int('dense_units', min_value=128, max_value=512, step=128)
         learning_rate = hp.Float('learning_rate', min_value=1e-5, max_value=1e-2, sampling='LOG')
         
         inputs = keras.Input(shape=(MAX_SEQ_LENGTH, DENSE_DIM))
@@ -39,13 +41,16 @@ class MyHyperModel(kt.HyperModel):
             x = transformer_encoder(x, head_size=DENSE_DIM, num_heads=num_heads, ff_dim=ff_dim, dropout=dropout_rate)
 
         # LSTM layers
-        x = layers.Bidirectional(layers.LSTM(128, return_sequences=True))(x)
+        x = layers.Bidirectional(layers.LSTM(lstm_units, return_sequences=True))(x)
         x = layers.Dropout(dropout_rate)(x)
         
-        x = layers.Bidirectional(layers.LSTM(128))(x)
+        x = layers.Bidirectional(layers.LSTM(lstm_units))(x)
         x = layers.Dropout(dropout_rate)(x)
         
-        x = layers.Dense(256, activation='relu')(x)
+        # Additional Dense layers
+        x = layers.Dense(dense_units, activation='relu')(x)
+        x = layers.Dropout(dropout_rate)(x)
+        x = layers.Dense(dense_units // 2, activation='relu')(x)
         x = layers.Dropout(dropout_rate)(x)
         
         outputs = layers.Dense(NUM_CLASSES, activation='softmax')(x)

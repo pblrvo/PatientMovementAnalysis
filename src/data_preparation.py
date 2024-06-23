@@ -4,6 +4,7 @@ from data_collection import load_csv
 from hyperparameter_tuning import MAX_SEQ_LENGTH
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
 
 # Split data into keypoints and labels
 def split_data_and_labels(df):
@@ -63,6 +64,9 @@ def standardize_keypoints(df):
 def build_tensors(df):
     df_data, df_labels = split_data_and_labels(df)
 
+    le = LabelEncoder()
+    df_labels = le.fit_transform(df_labels)
+
     df_data = extend_keypoints(df_data)
     data_extended = standardize_keypoints(df_data)
 
@@ -77,4 +81,4 @@ def build_tensors(df):
         # Append the list of frame tensors (representing the video) to the final list
         data_tensors.append(frame_tensors)
 
-    return np.array(data_tensors), df_labels
+    return np.array(data_tensors), df_labels, le.classes_
