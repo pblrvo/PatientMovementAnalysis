@@ -2,7 +2,6 @@ import keras
 from data_preparation import build_tensors
 from data_collection import load_csv
 import numpy as np
-import data_collection
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.preprocessing import LabelEncoder
 import keras_tuner as kt
@@ -10,23 +9,16 @@ from hyperparameter_tuning import MyHyperModel, EPOCHS
 from model_visualization import plot_confusion_matrix, plot_training_history
 from sklearn.model_selection import KFold, train_test_split
 
-videos_df = load_csv("./resources/labeled_keypoints.csv")
-X, y = build_tensors(videos_df)
-le = LabelEncoder()
-y_encoded = le.fit_transform(y)
-
-def tune_hyperparameters():
+def tune_hyperparameters(X, y):
     print("Hyperparameter tuning starting")
     filepath = "/tmp/video_classifier_model.keras"
     checkpoint = keras.callbacks.ModelCheckpoint(
         filepath, save_best_only=True, verbose=1
     )
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
-    
-    le = LabelEncoder()
-    y_encoded = le.fit_transform(y)
+    early_stopping = EarlyStopping(monitor='val_accuracy', patience=10)
 
-    X_train, X_val, y_train, y_val = train_test_split(X, y_encoded, test_size=0.15, random_state=42)  # 20% validation set
+
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.15, random_state=42)  # 20% validation set
 
     print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
     print(f"X_val shape: {X_val.shape}, y_val shape: {y_val.shape}")
@@ -47,17 +39,17 @@ def tune_hyperparameters():
 
     return best_model
 
-def cross_validate_model(best_model, X, y_encoded):
+def cross_validate_model(best_model, data, labels, classes):
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
     fold_no = 1
     val_accuracies = []
     all_y_true = []
     all_y_pred = []
 
-    for train_index, val_index in kf.split(X):
+    for train_index, val_index in kf.split(data):
         print(f"Training fold {fold_no}...")
-        X_train, X_val = X[train_index], X[val_index]
-        y_train, y_val = y_encoded[train_index], y_encoded[val_index]
+        X_train, X_val = data[train_index], data[val_index]
+        y_train, y_val = labels[train_index], labels[val_index]
 
         print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
         print(f"X_val shape: {X_val.shape}, y_val shape: {y_val.shape}")
@@ -84,7 +76,7 @@ def cross_validate_model(best_model, X, y_encoded):
     print(f"Average validation accuracy over {kf.n_splits} folds: {np.mean(val_accuracies):.4f}")
 
     # Plot confusion matrix
-    plot_confusion_matrix(all_y_true, all_y_pred, classes=le.classes_)
+    plot_confusion_matrix(all_y_true, all_y_pred, classes=classes)
 
     # Plot training history
     plot_training_history(history)
@@ -96,7 +88,9 @@ def cross_validate_model(best_model, X, y_encoded):
     return best_model
 
 def run_experiment():
-    best_model = tune_hyperparameters(X, y_encoded)
-    cross_validate_model(best_model, X, y_encoded)
+    videos_df = load_csv("./resources/labeled_keypoints.csv")
+    X, y, classes = build_tensors(videos_df)
+    best_model = tune_hyperparameters(X, y)
+    cross_validate_model(best_model, X, y, classes)
     
 model = run_experiment()
