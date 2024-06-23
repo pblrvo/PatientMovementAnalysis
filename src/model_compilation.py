@@ -8,7 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 import keras_tuner as kt
 from hyperparameter_tuning import MyHyperModel, EPOCHS
 from model_visualization import plot_confusion_matrix, plot_training_history
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, train_test_split
 
 videos_df = load_csv("./resources/labeled_keypoints.csv")
 X, y = build_tensors(videos_df)
@@ -16,6 +16,7 @@ le = LabelEncoder()
 y_encoded = le.fit_transform(y)
 
 def run_experiment():
+    print("Hyperparameter tuning starting")
     filepath = "/tmp/video_classifier_model.keras"
     checkpoint = keras.callbacks.ModelCheckpoint(
         filepath, save_best_only=True, verbose=1
@@ -25,30 +26,24 @@ def run_experiment():
     le = LabelEncoder()
     y_encoded = le.fit_transform(y)
 
-    kf = KFold(n_splits=2, shuffle=True, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X, y_encoded, test_size=0.15, random_state=42)  # 20% validation set
 
-    for train_index, val_index in kf.split(X):
-        X_train, X_val = X[train_index], X[val_index]
-        y_train, y_val = y_encoded[train_index], y_encoded[val_index]
+    print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
+    print(f"X_val shape: {X_val.shape}, y_val shape: {y_val.shape}")
 
-        print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
-        print(f"X_val shape: {X_val.shape}, y_val shape: {y_val.shape}")
-
-        tuner = kt.RandomSearch(
-            MyHyperModel(),
-            objective='val_accuracy',
-            max_trials=10,
-            executions_per_trial=1,
-            directory='my_dir',
-            project_name=f'hyperparam_tuning',
-            overwrite=True,
-        )
-
-        tuner.search(X_train, y_train, epochs=EPOCHS, validation_data=(X_val, y_val), batch_size=8, callbacks=[checkpoint, early_stopping])
-        print(f"Hyperparameter tuning completed ")
-
-        print(f"Retrieving the best model")
-        best_model = tuner.get_best_models(num_models=1)[0]
+    tuner = kt.RandomSearch(
+        MyHyperModel(),
+        objective='val_accuracy',
+        max_trials=10,
+        executions_per_trial=1,
+        directory='my_dir',
+        project_name='hyperparam_tuning',
+        overwrite=True,
+    )
+    tuner.search(X_train, y_train, epochs=EPOCHS, validation_data=(X_val, y_val), callbacks=[checkpoint, early_stopping])
+    print("Hyperparameter tuning completed")
+    print("Retrieving the best model")
+    best_model = tuner.get_best_models(num_models=1)[0]
 
     return best_model
 
@@ -71,7 +66,6 @@ def cross_validate_model(best_model, X, y_encoded):
             X_train, y_train,
             validation_data=(X_val, y_val),
             epochs=EPOCHS,
-            callbacks=[EarlyStopping(monitor='val_accuracy', patience=10)],
             verbose=1
         )
         print(f"Training completed for fold {fold_no}")
