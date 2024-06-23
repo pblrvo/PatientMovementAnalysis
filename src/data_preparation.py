@@ -5,6 +5,7 @@ from hyperparameter_tuning import MAX_SEQ_LENGTH
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
 
 # Split data into keypoints and labels
 def split_data_and_labels(df):
@@ -62,16 +63,21 @@ def standardize_keypoints(df):
 
 # Build tensors from dataframe
 def build_tensors(df):
-    df_data, df_labels = split_data_and_labels(df)
+    data_df, labels_df = split_data_and_labels(df)
+
+    train_data, test_data, train_labels, test_labels = train_test_split(data_df, labels_df, test_size=0.15, random_state=42)
 
     le = LabelEncoder()
-    df_labels = le.fit_transform(df_labels)
+    train_labels = le.fit_transform(train_labels)
+    test_labels = le.fit_transform(test_labels)
 
-    df_data = extend_keypoints(df_data)
-    data_extended = standardize_keypoints(df_data)
+    train_data = extend_keypoints(train_data)
+    train_data = standardize_keypoints(train_data)
+    test_data = extend_keypoints(test_data)
+    test_data = standardize_keypoints(test_data)
 
-    data_tensors = []
-    for video in data_extended:
+    train_tensors = []
+    for video in train_data:
         # Iterate through frames in the video
         frame_tensors = []
         for frame in video:
@@ -79,6 +85,17 @@ def build_tensors(df):
             frame_tensor = tf.convert_to_tensor(frame, dtype=tf.float32)
             frame_tensors.append(frame_tensor)
         # Append the list of frame tensors (representing the video) to the final list
-        data_tensors.append(frame_tensors)
+        train_tensors.append(frame_tensors)
 
-    return np.array(data_tensors), df_labels, le.classes_
+    test_tensors = []
+    for video in test_data:
+        # Iterate through frames in the video
+        frame_tensors = []
+        for frame in video:
+            # Convert each frame into a tensor
+            frame_tensor = tf.convert_to_tensor(frame, dtype=tf.float32)
+            frame_tensors.append(frame_tensor)
+        # Append the list of frame tensors (representing the video) to the final list
+        test_tensors.append(frame_tensors)
+
+    return np.array(train_tensors), train_labels, np.array(test_tensors), test_labels, le.classes_

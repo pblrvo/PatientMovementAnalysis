@@ -18,7 +18,7 @@ def tune_hyperparameters(X, y):
     early_stopping = EarlyStopping(monitor='val_accuracy', patience=10)
 
 
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.15, random_state=42)  # 20% validation set
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.20, random_state=42)  # 20% validation set
 
     print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
     print(f"X_val shape: {X_val.shape}, y_val shape: {y_val.shape}")
@@ -39,17 +39,17 @@ def tune_hyperparameters(X, y):
 
     return best_model
 
-def cross_validate_model(best_model, data, labels, classes):
+def cross_validate_model(best_model, train_data, train_labels, test_data, test_labels, classes):
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
     fold_no = 1
     val_accuracies = []
     all_y_true = []
     all_y_pred = []
 
-    for train_index, val_index in kf.split(data):
+    for train_index, val_index in kf.split(train_data):
         print(f"Training fold {fold_no}...")
-        X_train, X_val = data[train_index], data[val_index]
-        y_train, y_val = labels[train_index], labels[val_index]
+        X_train, X_val = train_data[train_index], train_data[val_index]
+        y_train, y_val = train_labels[train_index], train_labels[val_index]
 
         print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
         print(f"X_val shape: {X_val.shape}, y_val shape: {y_val.shape}")
@@ -85,12 +85,17 @@ def cross_validate_model(best_model, data, labels, classes):
     best_model.save("/tmp/video_classifier_model.keras")
     print("Final model saved")
 
+    best_model = keras.models.load_model("/tmp/video_classifier_model.keras")
+    
+    _, accuracy = best_model.evaluate(test_data, test_labels)
+    print(f"Test accuracy: {round(accuracy * 100, 2)}%")
+
     return best_model
 
 def run_experiment():
     videos_df = load_csv("./resources/labeled_keypoints.csv")
-    X, y, classes = build_tensors(videos_df)
-    best_model = tune_hyperparameters(X, y)
-    cross_validate_model(best_model, X, y, classes)
+    train_data, train_labels, test_data, test_labels, classes = build_tensors(videos_df)
+    best_model = tune_hyperparameters(train_data, train_labels)
+    cross_validate_model(best_model, train_data, train_labels, test_data, test_labels, classes)
     
 model = run_experiment()
