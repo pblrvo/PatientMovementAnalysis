@@ -1,5 +1,5 @@
 import tensorflow as tf
-from hyperparameter_tuning import MAX_SEQ_LENGTH
+from src.hyperparameter_tuning import MAX_SEQ_LENGTH
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
