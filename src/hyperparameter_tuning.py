@@ -2,7 +2,7 @@ from keras import layers
 import keras_tuner as kt
 import keras
 
-MAX_SEQ_LENGTH = 20
+MAX_SEQ_LENGTH = 100
 
 class MyHyperModel(kt.HyperModel):
     def transformer_encoder(self, inputs, head_size, num_heads, ff_dim, dropout=0):
