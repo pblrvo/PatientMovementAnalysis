@@ -66,4 +66,3 @@ def load_csv(filepath):
     df['keypoints'] = df['keypoints'].apply(lambda x: np.array(json.loads(x)))
 
     return df
-

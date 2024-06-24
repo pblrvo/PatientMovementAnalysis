@@ -29,7 +29,7 @@ def tune_hyperparameters(X, y):
         objective='val_accuracy',
         max_trials=10,
         executions_per_trial=1,
-        directory='my_dir',
+        directory='results',
         project_name='hyperparam_tuning',
         overwrite=True,
     )
