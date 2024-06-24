@@ -1,6 +1,4 @@
-from sklearn.model_selection import StratifiedShuffleSplit
 import tensorflow as tf
-from data_collection import load_csv
 from hyperparameter_tuning import MAX_SEQ_LENGTH
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -8,11 +6,11 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 
 # Split data into keypoints and labels
-def split_data_and_labels(df):
-    labels = df["label"].to_numpy()
-    keypoints_df = df.drop(columns=["label"])
+def split_data_and_labels(videos_dataframe):
+    labels = videos_dataframe["label"].to_numpy()
+    dataframe_data = videos_dataframe.drop(columns=["label"])
 
-    return keypoints_df, labels
+    return dataframe_data, labels
 
 # Extend keypoints to MAX_SEQ_LENGTH
 def extend_keypoints(df):
@@ -62,10 +60,10 @@ def standardize_keypoints(df):
     return all_standardized_keypoints  # Return the list of standardized video keypoints
 
 # Build tensors from dataframe
-def build_tensors(df):
-    data_df, labels_df = split_data_and_labels(df)
+def build_tensors(videos_dataframe):
+    dataframe_data, labels = split_data_and_labels(videos_dataframe)
 
-    train_data, test_data, train_labels, test_labels = train_test_split(data_df, labels_df, test_size=0.15, random_state=42)
+    train_data, test_data, train_labels, test_labels = train_test_split(dataframe_data, labels, test_size=0.15, random_state=42)
 
     le = LabelEncoder()
     train_labels = le.fit_transform(train_labels)

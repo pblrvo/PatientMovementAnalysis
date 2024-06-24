@@ -3,9 +3,10 @@ from data_preparation import build_tensors
 from data_collection import load_csv
 import numpy as np
 from tensorflow.keras.callbacks import EarlyStopping
-from sklearn.preprocessing import LabelEncoder
 import keras_tuner as kt
-from hyperparameter_tuning import MyHyperModel, EPOCHS
+from hyperparameter_tuning import MyHyperModel
+import sys
+sys.path.append('./utils')
 from model_visualization import plot_confusion_matrix, plot_training_history
 from sklearn.model_selection import KFold, train_test_split
 
@@ -15,10 +16,10 @@ def tune_hyperparameters(X, y):
     checkpoint = keras.callbacks.ModelCheckpoint(
         filepath, save_best_only=True, verbose=1
     )
-    early_stopping = EarlyStopping(monitor='val_accuracy', patience=10)
+    early_stopping = EarlyStopping(monitor='val_accuracy', patience=5)
 
 
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.20, random_state=42)  # 20% validation set
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.15, random_state=42)
 
     print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
     print(f"X_val shape: {X_val.shape}, y_val shape: {y_val.shape}")
@@ -32,7 +33,7 @@ def tune_hyperparameters(X, y):
         project_name='hyperparam_tuning',
         overwrite=True,
     )
-    tuner.search(X_train, y_train, epochs=EPOCHS, validation_data=(X_val, y_val), callbacks=[checkpoint, early_stopping])
+    tuner.search(X_train, y_train, epochs=200, validation_data=(X_val, y_val), callbacks=[checkpoint, early_stopping])
     print("Hyperparameter tuning completed")
     print("Retrieving the best model")
     best_model = tuner.get_best_models(num_models=1)[0]
@@ -57,7 +58,7 @@ def cross_validate_model(best_model, train_data, train_labels, test_data, test_l
         history = best_model.fit(
             X_train, y_train,
             validation_data=(X_val, y_val),
-            epochs=EPOCHS,
+            epochs=200,
             verbose=1
         )
         print(f"Training completed for fold {fold_no}")
