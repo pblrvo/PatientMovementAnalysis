@@ -2,7 +2,7 @@ from keras import layers
 import keras_tuner as kt
 import keras
 
-MAX_SEQ_LENGTH = 100
+MAX_SEQ_LENGTH = 150
 
 class MyHyperModel(kt.HyperModel):
     def transformer_encoder(self, inputs, head_size, num_heads, ff_dim, dropout=0):
@@ -28,7 +28,7 @@ class MyHyperModel(kt.HyperModel):
         ff_dim = hp.Int('ff_dim', min_value=32, max_value=256, step=32)
         lstm_units = hp.Int('lstm_units', min_value=64, max_value=256, step=64)
         dense_units = hp.Int('dense_units', min_value=128, max_value=512, step=128)
-        learning_rate = hp.Float('learning_rate', min_value=1e-5, max_value=1e-2, sampling='LOG')
+        learning_rate = hp.Float('learning_rate', min_value=1e-7, max_value=1e-4, sampling='LOG')
         
         inputs = keras.Input(shape=(MAX_SEQ_LENGTH, 272))
         

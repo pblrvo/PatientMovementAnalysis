@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+from pickle import dump, load
 
 # Split data into keypoints and labels
 def split_data_and_labels(videos_dataframe):
@@ -38,13 +39,15 @@ def extend_keypoints(df):
     return df
 
 # Standardize keypoints
-def standardize_keypoints(df):
-    scaler = StandardScaler()
+def standardize_keypoints(df, is_scaler_saved=False):
+    if is_scaler_saved == False:
+        scaler = StandardScaler()
+    else:
+        scaler = load(open('results/scaler.pkl', 'rb'))
     all_standardized_keypoints = []
     df = df.reset_index(drop=True)
     for i in range(len(df)):
         keypoints = df.loc[i, 'keypoints']
-
         standardized_video_keypoints = []
         for frame_keypoints in keypoints:
             # Reshape to 2D for StandardScaler
@@ -54,8 +57,12 @@ def standardize_keypoints(df):
             # Reshape back to original frame format
             standardized_frame_keypoints = standardized_frame_keypoints.reshape(-1)
             standardized_video_keypoints.append(standardized_frame_keypoints)
-
         all_standardized_keypoints.append(standardized_video_keypoints)
+
+    if is_scaler_saved == False:
+        dump(scaler, open('results/scaler.pkl', 'wb'))
+    
+
 
     return all_standardized_keypoints  # Return the list of standardized video keypoints
 
@@ -97,3 +104,27 @@ def build_tensors(videos_dataframe):
         test_tensors.append(frame_tensors)
 
     return np.array(train_tensors), train_labels, np.array(test_tensors), test_labels, le.classes_
+
+
+# Build tensors from test dataframe
+def build_tensors_for_test(videos_dataframe):
+    dataframe_data, labels = split_data_and_labels(videos_dataframe)
+
+    le = LabelEncoder()
+    test_labels = le.fit_transform(labels)
+
+    test_data = extend_keypoints(dataframe_data)
+    test_data = standardize_keypoints(test_data, is_scaler_saved=True)
+
+    test_tensors = []
+    for video in test_data:
+        # Iterate through frames in the video
+        frame_tensors = []
+        for frame in video:
+            # Convert each frame into a tensor
+            frame_tensor = tf.convert_to_tensor(frame, dtype=tf.float32)
+            frame_tensors.append(frame_tensor)
+        # Append the list of frame tensors (representing the video) to the final list
+        test_tensors.append(frame_tensors)
+
+    return np.array(test_tensors), test_labels

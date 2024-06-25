@@ -17,7 +17,7 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
     tuner = kt.RandomSearch(
             MyHyperModel(),
             objective='val_accuracy',
-            max_trials=10,
+            max_trials=100,
             executions_per_trial=1,
             directory='results',
             project_name=f'hyperparam_tuning_fold_{fold_no}',
@@ -44,7 +44,7 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
     
     val_accuracy = max(history.history['val_accuracy'])
 
-    plot_training_history(history)
+    #plot_training_history(history)
     return best_model, val_accuracy, validation_prediction
 
 
