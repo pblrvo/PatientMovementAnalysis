@@ -5,7 +5,7 @@ from sklearn.metrics import confusion_matrix
 
 
 
-def plot_training_history(history):
+def plot_training_history(history, fold_no):
     # Plot training & validation accuracy values
     plt.figure(figsize=(12, 4))
     plt.subplot(1, 2, 1)
@@ -25,7 +25,7 @@ def plot_training_history(history):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
 
-    plt.show()
+    plt.savefig(f'results/visualization/training_history_fold{fold_no}.png')
 
 def plot_confusion_matrix(y_true, y_pred, classes):
     cm = confusion_matrix(y_true, y_pred)
@@ -34,4 +34,4 @@ def plot_confusion_matrix(y_true, y_pred, classes):
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.title('Confusion Matrix')
-    plt.show()
+    plt.savefig('results/visualization/confusion_matrix.png')
