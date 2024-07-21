@@ -1,57 +1,37 @@
-from keras import layers
+from tensorflow.keras.layers import Conv1D, BatchNormalization, LSTM, Dense, Dropout
 import keras_tuner as kt
 import keras
+from tensorflow.keras.regularizers import l2
 
-MAX_SEQ_LENGTH = 150
+MAX_SEQ_LENGTH = 370
 
 class MyHyperModel(kt.HyperModel):
-    def transformer_encoder(self, inputs, head_size, num_heads, ff_dim, dropout=0):
-        # Attention and Normalization
-        x = layers.MultiHeadAttention(
-            key_dim=head_size, num_heads=num_heads, dropout=dropout
-        )(inputs, inputs)
-        x = layers.Dropout(dropout)(x)
-        x = layers.LayerNormalization(epsilon=1e-6)(x)
-        res = x + inputs
-
-        # Feed Forward Part
-        x = layers.Conv1D(filters=ff_dim, kernel_size=1, activation="relu")(res)
-        x = layers.Dropout(dropout)(x)
-        x = layers.Conv1D(filters=inputs.shape[-1], kernel_size=1)(x)
-        x = layers.LayerNormalization(epsilon=1e-6)(x)
-        return x + res
 
     def build(self, hp):
-        num_heads = hp.Int('num_heads', min_value=2, max_value=8, step=2)
-        num_layers = hp.Int('num_layers', min_value=1, max_value=6, step=1)
+        dense_units = hp.Int('dense_units', min_value=64, max_value=512, step=64)
+        learning_rate = hp.Float('learning_rate', min_value=1e-7, max_value=1e-5, sampling='LOG')
         dropout_rate = hp.Float('dropout_rate', min_value=0.2, max_value=0.5, step=0.1)
-        ff_dim = hp.Int('ff_dim', min_value=32, max_value=256, step=32)
-        lstm_units = hp.Int('lstm_units', min_value=64, max_value=256, step=64)
-        dense_units = hp.Int('dense_units', min_value=128, max_value=512, step=128)
-        learning_rate = hp.Float('learning_rate', min_value=1e-7, max_value=1e-4, sampling='LOG')
-        
-        inputs = keras.Input(shape=(MAX_SEQ_LENGTH, 272))
-        
-        x = inputs
-        
-        for _ in range(num_layers):
-            x = self.transformer_encoder(x, head_size=272, num_heads=num_heads, ff_dim=ff_dim, dropout=dropout_rate)
 
-        # LSTM layers
-        x = layers.Bidirectional(layers.LSTM(lstm_units, return_sequences=True))(x)
-        x = layers.Dropout(dropout_rate)(x)
-        
-        x = layers.Bidirectional(layers.LSTM(lstm_units))(x)
-        x = layers.Dropout(dropout_rate)(x)
-        
-        # Additional Dense layers
-        x = layers.Dense(dense_units, activation='relu')(x)
-        x = layers.Dropout(dropout_rate)(x)
-        x = layers.Dense(dense_units // 2, activation='relu')(x)
-        x = layers.Dropout(dropout_rate)(x)
-        
-        outputs = layers.Dense(4, activation='softmax')(x)
-        
+        inputs = keras.Input(shape=(MAX_SEQ_LENGTH, 272))
+
+        x = inputs
+
+        # Add one or more Conv1D layers with hyperparameter tuning
+        x = Conv1D(filters=64, kernel_size=3, activation='relu')(x)
+        x = BatchNormalization()(x)
+        x = Conv1D(128, kernel_size=3, activation='relu')(x)
+        x = BatchNormalization()(x)
+        x = Conv1D(256, kernel_size=3, activation='relu')(x)
+        x = BatchNormalization()(x)
+        x = LSTM(128, return_sequences=True)(x)
+        x = Dropout(dropout_rate)(x)
+        x = LSTM(64, return_sequences=False)(x)
+        x = Dropout(dropout_rate)(x)
+        x = Dense(dense_units, activation='relu')(x)
+        x = Dropout(dropout_rate)(x)
+        x = Dense(dense_units//2, activation='relu')(x)
+        outputs = Dense(4, activation='softmax')(x)
+
         model = keras.Model(inputs, outputs)
         
         # Hyperparameter tuning for optimizers

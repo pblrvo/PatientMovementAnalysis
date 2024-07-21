@@ -4,10 +4,18 @@ import datetime
 import keras_tuner as kt
 import numpy as np
 from src.hyperparameter_tuning import MyHyperModel
+from src.balance_data_generator import BalancedDataGenerator
 import tensorflow as tf
 from utils.model_visualization import plot_training_history
 import sys
 sys.path.append('./utils')
+
+def compute_class_weights(y):
+    class_counts = np.bincount(y)
+    total_samples = len(y)
+    n_classes = len(class_counts)
+    weights = total_samples / (n_classes * class_counts)
+    return dict(enumerate(weights))
 
 def model_training(train_data, train_labels, validation_data, validation_labels, fold_no):
     def scheduler(epoch, lr):
@@ -31,7 +39,8 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
     # Early stopping callback
     early_stopping = EarlyStopping(monitor='val_accuracy', patience=10)
 
-
+    class_weights = compute_class_weights(train_labels)
+    train_generator = BalancedDataGenerator(train_data, train_labels, batch_size=32)
     tuner = kt.RandomSearch(
         MyHyperModel(),
         objective='val_accuracy',
@@ -42,7 +51,7 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
         overwrite=True,
     )
 
-    tuner.search(train_data, train_labels, epochs=20, batch_size=8, validation_data=(validation_data, validation_labels), callbacks=[checkpoint, lr_scheduler, early_stopping, tensorboard_callback])
+    tuner.search(train_generator, epochs=20, batch_size=8, class_weight=class_weights, validation_data=(validation_data, validation_labels), callbacks=[checkpoint, lr_scheduler, early_stopping, tensorboard_callback])
     print(f"Hyperparameter tuning completed for fold {fold_no}")
     print(f"Retrieving the best model for fold {fold_no}...")
     best_model = tuner.get_best_models(num_models=1)[0]
@@ -50,6 +59,7 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
 
     history = best_model.fit(
         train_data, train_labels,
+        class_weight=class_weights,
         validation_data=(validation_data, validation_labels),
         batch_size=8,
         epochs=20,

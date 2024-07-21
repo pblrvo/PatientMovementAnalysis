@@ -11,7 +11,7 @@ if __name__ == '__main__':
     #decompress_file(zip_file='./resources/labeled_keypoints.csv.zip', output_folder='./resources', password='')
     videos_dataframe = load_csv(filepath='./resources/labeled_keypoints.csv')
 
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    kf = KFold(n_splits=2, shuffle=True, random_state=42)
     fold_no = 1
     val_accuracies = []
     test_accuracies = []
