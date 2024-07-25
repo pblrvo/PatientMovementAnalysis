@@ -9,24 +9,32 @@ class MyHyperModel(kt.HyperModel):
 
     def build(self, hp):
         dense_units = hp.Int('dense_units', min_value=64, max_value=512, step=64)
-        learning_rate = hp.Float('learning_rate', min_value=1e-7, max_value=1e-5, sampling='LOG')
+        learning_rate = hp.Float('learning_rate', min_value=1e-7, max_value=1e-3, sampling='LOG')
         dropout_rate = hp.Float('dropout_rate', min_value=0.2, max_value=0.5, step=0.1)
+        conv1_filters = hp.Int('conv1_filters', min_value=32, max_value=128, step=32)
+        conv2_filters = hp.Int('conv2_filters', min_value=64, max_value=256, step=64)
+        conv3_filters = hp.Int('conv3_filters', min_value=128, max_value=512, step=128)
+        lstm1_units = hp.Int('lstm1_units', min_value=64, max_value=256, step=64)
+        lstm2_units = hp.Int('lstm2_units', min_value=32, max_value=128, step=32)
 
         inputs = keras.Input(shape=(MAX_SEQ_LENGTH, 272))
 
         x = inputs
 
-        # Add one or more Conv1D layers with hyperparameter tuning
-        x = Conv1D(filters=64, kernel_size=3, activation='relu')(x)
+        # Conv1D layers with hyperparameter tuning
+        x = Conv1D(filters=conv1_filters, kernel_size=3, activation='relu')(x)
         x = BatchNormalization()(x)
-        x = Conv1D(128, kernel_size=3, activation='relu')(x)
+        x = Conv1D(conv2_filters, kernel_size=3, activation='relu')(x)
         x = BatchNormalization()(x)
-        x = Conv1D(256, kernel_size=3, activation='relu')(x)
+        x = Conv1D(conv3_filters, kernel_size=3, activation='relu')(x)
         x = BatchNormalization()(x)
-        x = LSTM(128, return_sequences=True)(x)
+
+        # LSTM layers with hyperparameter tuning
+        x = LSTM(lstm1_units, return_sequences=True)(x)
         x = Dropout(dropout_rate)(x)
-        x = LSTM(64, return_sequences=False)(x)
+        x = LSTM(lstm2_units, return_sequences=False)(x)
         x = Dropout(dropout_rate)(x)
+
         x = Dense(dense_units, activation='relu')(x)
         x = Dropout(dropout_rate)(x)
         x = Dense(dense_units//2, activation='relu')(x)

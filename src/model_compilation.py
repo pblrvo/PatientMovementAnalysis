@@ -40,30 +40,31 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
     early_stopping = EarlyStopping(monitor='val_accuracy', patience=10)
 
     class_weights = compute_class_weights(train_labels)
-    train_generator = BalancedDataGenerator(train_data, train_labels, batch_size=32)
+    train_generator = BalancedDataGenerator(train_data, train_labels, batch_size=16)
     tuner = kt.RandomSearch(
         MyHyperModel(),
         objective='val_accuracy',
         executions_per_trial=1,
-        max_trials=10,
+        max_trials=200,
         directory='results',
         project_name=f'hyperparam_tuning_fold_{fold_no}',
         overwrite=True,
     )
 
-    tuner.search(train_generator, epochs=20, batch_size=8, class_weight=class_weights, validation_data=(validation_data, validation_labels), callbacks=[checkpoint, lr_scheduler, early_stopping, tensorboard_callback])
+    tuner.search(train_generator, epochs=200, class_weight=class_weights, batch_size=16,  validation_data=(validation_data, validation_labels), callbacks=[checkpoint, lr_scheduler, early_stopping, tensorboard_callback])
     print(f"Hyperparameter tuning completed for fold {fold_no}")
     print(f"Retrieving the best model for fold {fold_no}...")
     best_model = tuner.get_best_models(num_models=1)[0]
+    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     print(f"Starting training of the best model for fold {fold_no}...")
 
     history = best_model.fit(
         train_data, train_labels,
         class_weight=class_weights,
         validation_data=(validation_data, validation_labels),
-        batch_size=8,
-        epochs=20,
-        callbacks=[lr_scheduler, tensorboard_callback],
+        batch_size=16,
+        epochs=200,
+        callbacks=[early_stopping, lr_scheduler, tensorboard_callback],
         verbose=1
     )
 
