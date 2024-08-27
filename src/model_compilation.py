@@ -37,7 +37,7 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
         filepath, save_best_only=True, verbose=1
     )
     # Early stopping callback
-    early_stopping = EarlyStopping(monitor='val_accuracy', patience=10)
+    early_stopping = EarlyStopping(monitor='val_accuracy', patience=5)
 
     class_weights = compute_class_weights(train_labels)
     train_generator = BalancedDataGenerator(train_data, train_labels, batch_size=16)
@@ -45,7 +45,7 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
         MyHyperModel(),
         objective='val_accuracy',
         executions_per_trial=1,
-        max_trials=200,
+        max_trials=100,
         directory='results',
         project_name=f'hyperparam_tuning_fold_{fold_no}',
         overwrite=True,
