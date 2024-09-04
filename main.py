@@ -7,8 +7,8 @@ from sklearn.model_selection import KFold
 import numpy as np
 
 if __name__ == '__main__':
-    #download_file_from_drive(file_id='1rqwyCpqf82_zhyD9Jay4m7Y8HXJmW4pJ', output='./resources/labeled_keypoints.csv.zip')
-    #decompress_file(zip_file='./resources/labeled_keypoints.csv.zip', output_folder='./resources', password='')
+    download_file_from_drive(file_id='1rqwyCpqf82_zhyD9Jay4m7Y8HXJmW4pJ', output='./resources/labeled_keypoints.csv.zip')
+    decompress_file(zip_file='./resources/labeled_keypoints.csv.zip', output_folder='./resources', password='')
     videos_dataframe = load_csv(filepath='./resources/labeled_keypoints.csv')
 
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
