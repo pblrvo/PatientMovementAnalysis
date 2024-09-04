@@ -31,7 +31,7 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
     # Early stopping callback
     early_stopping = EarlyStopping(monitor='val_accuracy', patience=5)
 
-    #class_weights = compute_class_weights(train_labels)
+    class_weights = compute_class_weights(train_labels)
     train_generator = BalancedDataGenerator(train_data, train_labels, batch_size=16)
     tuner = kt.RandomSearch(
         MyHyperModel(),
@@ -43,7 +43,7 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
         overwrite=True,
     )
 
-    tuner.search(train_generator, epochs=200, batch_size=16,  validation_data=(validation_data, validation_labels), callbacks=[checkpoint, early_stopping, tensorboard_callback])
+    tuner.search(train_generator, epochs=200, class_weight=class_weights, batch_size=16,  validation_data=(validation_data, validation_labels), callbacks=[checkpoint, early_stopping, tensorboard_callback])
     print(f"Hyperparameter tuning completed for fold {fold_no}")
     print(f"Retrieving the best model for fold {fold_no}...")
     best_model = tuner.get_best_models(num_models=1)[0]
@@ -52,6 +52,7 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
 
     history = best_model.fit(
         train_data, train_labels,
+        class_weight=class_weights,
         validation_data=(validation_data, validation_labels),
         batch_size=16,
         epochs=200,
