@@ -1,5 +1,5 @@
 from keras import models
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, LearningRateScheduler, ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
 import datetime
 import keras_tuner as kt
 import numpy as np
@@ -9,26 +9,46 @@ import tensorflow as tf
 from utils.model_visualization import plot_training_history
 import sys
 sys.path.append('./utils')
+from typing import Tuple, Dict, Any
 
-def compute_class_weights(y):
+def compute_class_weights(y: np.ndarray) -> Dict[int, float]:
+    """
+    Compute class weights to handle imbalanced datasets.
+
+    Args:
+        y (np.ndarray): Array of labels.
+
+    Returns:
+        Dict[int, float]: Dictionary of class weights.
+    """
     class_counts = np.bincount(y)
     total_samples = len(y)
     n_classes = len(class_counts)
     weights = total_samples / (n_classes * class_counts)
     return dict(enumerate(weights))
 
-def model_training(train_data, train_labels, validation_data, validation_labels, fold_no):
+def model_training(train_data: np.ndarray, train_labels: np.ndarray, validation_data: np.ndarray, validation_labels: np.ndarray, fold_no: int) -> Tuple[models.Model, float, np.ndarray]:
+    """
+    Train the model with hyperparameter tuning and balanced data generator.
 
-    # TensorBoard callback
+    Args:
+        train_data (np.ndarray): Training data.
+        train_labels (np.ndarray): Training labels.
+        validation_data (np.ndarray): Validation data.
+        validation_labels (np.ndarray): Validation labels.
+        fold_no (int): Fold number for cross-validation.
+
+    Returns:
+        Tuple[models.Model, float, np.ndarray]: Trained model, validation accuracy, and validation predictions.
+    """
     log_dir = "results/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-    # Model checkpoint callback
     filepath = "results/models/video_classifier_model.keras"
     checkpoint = ModelCheckpoint(
         filepath, save_best_only=True, verbose=1
     )
-    # Early stopping callback
+    
     early_stopping = EarlyStopping(monitor='val_accuracy', patience=5)
 
     class_weights = compute_class_weights(train_labels)
@@ -60,20 +80,30 @@ def model_training(train_data, train_labels, validation_data, validation_labels,
         verbose=1
     )
 
-    # Log metrics using TensorBoard
     tensorboard_callback.set_model(best_model)
 
     best_model.save(filepath)
     print(f"Model saved to {filepath}")
     
     val_accuracy = max(history.history['val_accuracy'])
-    # Collect true and predicted labels for confusion matrix
+    
     validation_prediction = np.argmax(best_model.predict(validation_data), axis=1)
 
     plot_training_history(history, fold_no)
     return best_model, val_accuracy, validation_prediction
 
-def model_evaluation(model, test_data, test_labels):
+def model_evaluation(model: models.Model, test_data: np.ndarray, test_labels: np.ndarray) -> float:
+    """
+    Evaluate the model on test data.
+
+    Args:
+        model (models.Model): Trained model.
+        test_data (np.ndarray): Test data.
+        test_labels (np.ndarray): Test labels.
+
+    Returns:
+        float: Test accuracy.
+    """
     model = models.load_model("results/models/video_classifier_model.keras")
     _, accuracy = model.evaluate(test_data, test_labels)
     return accuracy
