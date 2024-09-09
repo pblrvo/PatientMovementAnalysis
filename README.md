@@ -15,7 +15,7 @@ This project aims to develop a deep learning model that can classify the severit
   - `main.py`: The main script to run the project. It handles data loading, preprocessing, training, evaluation, and potentially saving the trained model.
 
 ## Dependencies
-- Python 3.7+
+- Python 3.12+
 
 ## Installation
 ```bash
