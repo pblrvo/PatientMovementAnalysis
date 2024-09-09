@@ -3,20 +3,6 @@ import gdown
 import os
 from typing import Optional
 
-def compress_file_with_password(file_path: str, output_path: str, password: str) -> None:
-    """
-    Compress a file with a password using AES encryption.
-
-    Args:
-        file_path (str): Path to the file to be compressed.
-        output_path (str): Path to save the compressed file.
-        password (str): Password for encryption.
-    """
-    with pyzipper.AESZipFile(output_path, 'w', compression=pyzipper.ZIP_DEFLATED) as zf:
-        zf.setpassword(password.encode())
-        zf.setencryption(pyzipper.WZ_AES, nbits=256)
-        zf.write(file_path, os.path.basename(file_path))
-
 def download_file_from_drive(file_id: str, output: str) -> None:
     """
     Download a file from Google Drive.

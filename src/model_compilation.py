@@ -55,7 +55,7 @@ def model_training(train_data: np.ndarray, train_labels: np.ndarray, validation_
     log_dir = "results/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-    filepath = f"results/models/video_classifier_model{fold_no}.keras"
+    filepath = f"results/models/video_classifier_model.keras"
     checkpoint = ModelCheckpoint(
         filepath, save_best_only=True, verbose=1
     )
@@ -80,7 +80,6 @@ def model_training(train_data: np.ndarray, train_labels: np.ndarray, validation_
     print(f"Hyperparameter tuning completed for fold {fold_no}")
     print(f"Retrieving the best model for fold {fold_no}...")
     best_model = tuner.get_best_models(num_models=1)[0]
-    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     print(f"Starting training of the best model for fold {fold_no}...")
 
     history = best_model.fit(
