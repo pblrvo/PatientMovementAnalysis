@@ -15,6 +15,9 @@ if __name__ == '__main__':
     fold_no = 1
     val_accuracies = []
     test_accuracies = []
+    test_precisions = []
+    test_recalls = []
+    test_f1s = []
     #Used later to plot Confusion Matrix
     all_labels_true = []
     all_labels_pred = []
@@ -41,14 +44,27 @@ if __name__ == '__main__':
         all_labels_pred.extend(validation_prediction)
         print(f"Training completed for fold {fold_no}")
 
-        accuracy_on_test_data = model_evaluation(best_model, test_X, test_Y)
-        test_accuracies.append(accuracy_on_test_data)
-        print(f"Test accuracy: {round(accuracy_on_test_data * 100, 2)}%")
+        accuracy, precision, recall, f1 = model_evaluation(best_model, test_X, test_Y)
+        print(f"Test accuracy: {round(accuracy * 100, 2)}%")
+        print(f"Test precision: {round(precision * 100, 2)}%")
+        print(f"Test recall: {round(recall * 100, 2)}%")
+        print(f"Test F1 score: {round(f1 * 100, 2)}%")
+
+        # Append metrics for each fold
+        test_accuracies.append(accuracy)
+        test_precisions.append(precision)
+        test_recalls.append(recall)
+        test_f1s.append(f1)
+
         fold_no +=1
 
 
+    
     print(f"Average validation accuracy over {kf.n_splits} folds: {np.mean(val_accuracies):.4f}")
     print(f"Average test accuracy over {kf.n_splits} folds: {np.mean(test_accuracies):.4f}")
+    print(f"Average test precision over {kf.n_splits} folds: {np.mean(test_precisions):.4f}")
+    print(f"Average test recall over {kf.n_splits} folds: {np.mean(test_recalls):.4f}")
+    print(f"Average test F1 score over {kf.n_splits} folds: {np.mean(test_f1s):.4f}")
 
 
     plot_confusion_matrix(all_labels_true, all_labels_pred, classes)

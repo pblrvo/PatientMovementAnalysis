@@ -1,5 +1,5 @@
 from keras import models
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint, LearningRateScheduler
 import datetime
 import keras_tuner as kt
 import numpy as np
@@ -7,6 +7,7 @@ from src.hyperparameter_tuning import MyHyperModel
 from src.balance_data_generator import BalancedDataGenerator
 import tensorflow as tf
 from utils.model_visualization import plot_training_history
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import sys
 sys.path.append('./utils')
 from typing import Tuple, Dict, Any
@@ -41,10 +42,20 @@ def model_training(train_data: np.ndarray, train_labels: np.ndarray, validation_
     Returns:
         Tuple[models.Model, float, np.ndarray]: Trained model, validation accuracy, and validation predictions.
     """
+
+    def scheduler(epoch, lr):
+        if epoch < 10:
+            return lr
+        else:
+            return float(lr * tf.math.exp(-0.1))
+
+    # Learning rate scheduler
+    lr_scheduler = LearningRateScheduler(scheduler)
+
     log_dir = "results/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-    filepath = "results/models/video_classifier_model.keras"
+    filepath = f"results/models/video_classifier_model{fold_no}.keras"
     checkpoint = ModelCheckpoint(
         filepath, save_best_only=True, verbose=1
     )
@@ -63,7 +74,9 @@ def model_training(train_data: np.ndarray, train_labels: np.ndarray, validation_
         overwrite=True,
     )
 
-    tuner.search(train_generator, epochs=200, class_weight=class_weights, batch_size=16,  validation_data=(validation_data, validation_labels), callbacks=[checkpoint, early_stopping, tensorboard_callback])
+    tuner.search(train_generator, epochs=200, class_weight=class_weights, 
+                 batch_size=16,  validation_data=(validation_data, validation_labels), 
+                 callbacks=[checkpoint, early_stopping, lr_scheduler, tensorboard_callback])
     print(f"Hyperparameter tuning completed for fold {fold_no}")
     print(f"Retrieving the best model for fold {fold_no}...")
     best_model = tuner.get_best_models(num_models=1)[0]
@@ -76,7 +89,7 @@ def model_training(train_data: np.ndarray, train_labels: np.ndarray, validation_
         validation_data=(validation_data, validation_labels),
         batch_size=16,
         epochs=200,
-        callbacks=[early_stopping, tensorboard_callback],
+        callbacks=[early_stopping, tensorboard_callback, lr_scheduler],
         verbose=1
     )
 
@@ -92,7 +105,7 @@ def model_training(train_data: np.ndarray, train_labels: np.ndarray, validation_
     plot_training_history(history, fold_no)
     return best_model, val_accuracy, validation_prediction
 
-def model_evaluation(model: models.Model, test_data: np.ndarray, test_labels: np.ndarray) -> float:
+def model_evaluation(model: models.Model, test_data: np.ndarray, test_labels: np.ndarray) -> Tuple[float, float, float, float]:
     """
     Evaluate the model on test data.
 
@@ -102,8 +115,15 @@ def model_evaluation(model: models.Model, test_data: np.ndarray, test_labels: np
         test_labels (np.ndarray): Test labels.
 
     Returns:
-        float: Test accuracy.
+        Tuple[float, float, float, float]: Accuracy, precision, recall, and F1 score.
     """
     model = models.load_model("results/models/video_classifier_model.keras")
-    _, accuracy = model.evaluate(test_data, test_labels)
-    return accuracy
+    y_pred_prob = model.predict(test_data)
+    y_pred = np.argmax(y_pred_prob, axis=1)
+    
+    accuracy = accuracy_score(test_labels, y_pred)
+    precision = precision_score(test_labels, y_pred, average='macro')
+    recall = recall_score(test_labels, y_pred, average='macro')
+    f1 = f1_score(test_labels, y_pred, average='macro')
+    
+    return accuracy, precision, recall, f1
