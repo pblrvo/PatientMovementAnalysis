@@ -3,7 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 resources/*
-results/*
+results/hyperparam*
+results/logs
+results/models/video*
+results/visualization/training*
+results/visualization/confusion*
+results/scaler*
 # C extensions
 *.so
 
