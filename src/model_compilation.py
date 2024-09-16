@@ -53,6 +53,7 @@ def model_training(train_data: np.ndarray, train_labels: np.ndarray, validation_
     lr_scheduler = LearningRateScheduler(scheduler)
 
     log_dir = "results/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
     tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     filepath = f"results/models/video_classifier_model.keras"
@@ -65,7 +66,7 @@ def model_training(train_data: np.ndarray, train_labels: np.ndarray, validation_
     class_weights = compute_class_weights(train_labels)
     train_generator = BalancedDataGenerator(train_data, train_labels, batch_size=16)
     tuner = kt.RandomSearch(
-        MyHyperModel(),
+        MyHyperModel(fold_no),
         objective='val_accuracy',
         executions_per_trial=1,
         max_trials=100,

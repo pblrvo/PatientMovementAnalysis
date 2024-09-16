@@ -9,6 +9,14 @@ class MyHyperModel(kt.HyperModel):
     """
     A hypermodel class for hyperparameter tuning using Keras Tuner.
     """
+    def __init__(self, fold_no: int):
+        """
+        Initialize the hypermodel with fold number.
+        
+        Args:
+            fold_no (int): Fold number for cross-validation.
+        """
+        self.fold_no = fold_no 
 
     def build(self, hp: kt.HyperParameters) -> keras.Model:
         """
@@ -20,6 +28,7 @@ class MyHyperModel(kt.HyperModel):
         Returns:
             keras.Model: Compiled Keras model.
         """
+        fold_no = int = hp.Int('fold_number', min_value=self.fold_no, max_value=self.fold_no, step=1)
         dense_units: int = hp.Int('dense_units', min_value=64, max_value=512, step=64)
         learning_rate: float = hp.Float('learning_rate', min_value=1e-7, max_value=1e-3, sampling='LOG')
         dropout_rate: float = hp.Float('dropout_rate', min_value=0.2, max_value=0.5, step=0.1)
